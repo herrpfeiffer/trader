@@ -35,8 +35,8 @@
   "technical_indicators": {
     "adx": {
       "period": 14,
-      "threshold": 25.0,
-      "description": "Trending market threshold - only trade when ADX > this"
+      "threshold": 12.5,
+      "description": "Trending market threshold - only trade when ADX > this (relaxed from 25.0)"
     },
     "bollinger_bands": {
       "period": 20,
@@ -45,8 +45,8 @@
     },
     "rsi": {
       "period": 14,
-      "overbought": 70.0,
-      "description": "Don't buy if RSI > this threshold"
+      "overbought": 80.0,
+      "description": "Don't buy if RSI > this threshold (relaxed from 70.0)"
     },
     "atr": {
       "period": 14,

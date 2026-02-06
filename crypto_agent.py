@@ -127,13 +127,13 @@ class Config:
     
     # Technical Indicators
     adx_period: int = 14
-    adx_threshold: float = 25.0  # Trending market threshold
+    adx_threshold: float = 12.5  # Trending market threshold (relaxed from 25.0)
     bb_period: int = 20
     bb_std: float = 2.0
     rsi_period: int = 14
-    rsi_overbought: float = 70.0
+    rsi_overbought: float = 80.0  # Relaxed from 70.0 (allows more overbought conditions)
     atr_period: int = 14
-    volume_spike_multiplier: float = 1.5
+    volume_spike_multiplier: float = 1.25  # Relaxed from 1.5
     
     # Risk Management
     atr_stop_multiplier: float = 2.0  # Stop loss distance
@@ -748,7 +748,7 @@ class TradingStrategy:
         
         # 2. Price at lower Bollinger Band
         price = indicators_15m['price']
-        if price > indicators_15m['bb_lower'] * 1.01:  # Allow 1% margin
+        if price > indicators_15m['bb_lower'] * 1.015:  # Allow 1.5% margin (relaxed from 1%)
             return False, f"Price not at lower BB (${price:.2f} > ${indicators_15m['bb_lower']:.2f})"
         
         # 3. Volume spike
