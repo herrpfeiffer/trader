@@ -18,13 +18,12 @@ echo "✓ Dependencies installed"
 echo ""
 
 # Check for API credentials
-if [ -z "$COINBASE_API_KEY" ]; then
-    echo "⚠️  WARNING: COINBASE_API_KEY not set"
+if [ -z "$COINBASE_API_KEY_NAME" ]; then
+    echo "⚠️  WARNING: COINBASE_API_KEY_NAME not set"
     echo ""
     echo "To set your API credentials:"
-    echo "  export COINBASE_API_KEY='your_key_here'"
-    echo "  export COINBASE_API_SECRET='your_secret_here'"
-    echo "  export COINBASE_API_PASSPHRASE='your_passphrase_here'"
+    echo "  export COINBASE_API_KEY_NAME='your_key_name_here'"
+    echo "  export COINBASE_PRIVATE_KEY='your_private_key_here'"
     echo ""
     echo "Get your API key at: https://www.coinbase.com/settings/api"
     echo "(For paper trading, create a VIEW-ONLY key)"

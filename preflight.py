@@ -7,6 +7,50 @@ import os
 import sys
 import json
 
+def load_env_file(env_path='.env'):
+    """Load environment variables from .env file"""
+    if not os.path.exists(env_path):
+        return
+    
+    try:
+        with open(env_path, 'r') as f:
+            for line in f:
+                line = line.strip()
+                # Skip comments and empty lines
+                if not line or line.startswith('#'):
+                    continue
+                
+                # Parse KEY=VALUE format
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # Remove quotes if present
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    
+                    # Handle multi-line values (for private keys)
+                    if value.startswith('-----BEGIN'):
+                        # Read until END line
+                        full_value = value
+                        for next_line in f:
+                            full_value += '\n' + next_line.rstrip()
+                            if '-----END' in next_line:
+                                break
+                        value = full_value
+                    
+                    # Set environment variable if not already set
+                    if key and not os.getenv(key):
+                        os.environ[key] = value
+    except Exception as e:
+        print(f"⚠️  Warning: Could not load .env file: {e}")
+
+# Load .env file at module import
+load_env_file()
+
 def check_python_version():
     """Check Python version is 3.7+"""
     version = sys.version_info
@@ -20,6 +64,7 @@ def check_python_version():
 def check_dependencies():
     """Check required packages are installed"""
     required = ['pandas', 'numpy', 'requests']
+    optional = {'jwt': 'PyJWT', 'cryptography': 'cryptography'}  # Package name: import name
     missing = []
     
     for package in required:
@@ -30,37 +75,44 @@ def check_dependencies():
             missing.append(package)
             print(f"❌ {package} NOT installed")
     
+    # Check optional packages (for new API)
+    for import_name, package_name in optional.items():
+        try:
+            __import__(import_name)
+            print(f"✓ {package_name} installed")
+        except ImportError:
+            missing.append(package_name)
+            print(f"❌ {package_name} NOT installed (required for new Coinbase API)")
+    
     if missing:
         print()
         print("Install missing packages:")
-        print(f"  pip install {' '.join(missing)} --break-system-packages")
+        print(f"  pip3 install --user {' '.join(missing)}")
         return False
     
     return True
 
 def check_api_credentials():
     """Check API credentials are set"""
-    key = os.getenv('COINBASE_API_KEY')
-    secret = os.getenv('COINBASE_API_SECRET')
-    passphrase = os.getenv('COINBASE_API_PASSPHRASE')
+    key_name = os.getenv('COINBASE_API_KEY_NAME')
+    private_key = os.getenv('COINBASE_PRIVATE_KEY')
     
-    if not key:
-        print("❌ COINBASE_API_KEY not set")
-        print("   Set with: export COINBASE_API_KEY='your_key'")
+    if not key_name:
+        print("❌ COINBASE_API_KEY_NAME not set")
+        print("   Set with: export COINBASE_API_KEY_NAME='your_key_name'")
         return False
     
-    if not secret:
-        print("❌ COINBASE_API_SECRET not set")
-        print("   Set with: export COINBASE_API_SECRET='your_secret'")
+    if not private_key:
+        print("❌ COINBASE_PRIVATE_KEY not set")
+        print("   Set with: export COINBASE_PRIVATE_KEY='your_private_key'")
         return False
     
-    if not passphrase:
-        print("⚠️  COINBASE_API_PASSPHRASE not set (may be required)")
-        print("   Set with: export COINBASE_API_PASSPHRASE='your_passphrase'")
-        # Don't fail - some API versions don't need this
+    if not private_key.startswith('-----BEGIN'):
+        print("⚠️  WARNING: Private key should be in PEM format")
+        print("   It should start with: -----BEGIN EC PRIVATE KEY-----")
     
     print("✓ API credentials found")
-    print(f"   Key: {key[:8]}...{key[-4:]}")
+    print(f"   Key Name: {key_name}")
     return True
 
 def check_config():
