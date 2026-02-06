@@ -1,0 +1,101 @@
+{
+  "description": "Trading Agent Configuration - Edit these values to tune strategy",
+  
+  "api": {
+    "note": "Set these as environment variables, not in this file",
+    "required_env_vars": [
+      "COINBASE_API_KEY",
+      "COINBASE_API_SECRET",
+      "COINBASE_API_PASSPHRASE"
+    ]
+  },
+  
+  "trading": {
+    "asset_pair": "BTC-USD",
+    "timeframe": "15m",
+    "confirmation_timeframe": "1h"
+  },
+  
+  "position_sizing": {
+    "tier_1": {
+      "max_balance": 100,
+      "position_pct": 0.99,
+      "description": "Up to $100: use 99% of funds"
+    },
+    "tier_2": {
+      "max_balance": 1000,
+      "position_pct": 0.20,
+      "description": "$100-$1000: use 20% of funds"
+    },
+    "tier_3": {
+      "position_pct": 0.10,
+      "description": "$10,000+: use 10% of funds"
+    }
+  },
+  
+  "technical_indicators": {
+    "adx": {
+      "period": 14,
+      "threshold": 25.0,
+      "description": "Trending market threshold - only trade when ADX > this"
+    },
+    "bollinger_bands": {
+      "period": 20,
+      "std_dev": 2.0,
+      "description": "Entry when price touches lower band"
+    },
+    "rsi": {
+      "period": 14,
+      "overbought": 70.0,
+      "description": "Don't buy if RSI > this threshold"
+    },
+    "atr": {
+      "period": 14,
+      "description": "For dynamic stop-loss and trailing calculations"
+    },
+    "volume": {
+      "spike_multiplier": 1.5,
+      "description": "Entry requires volume > this × average"
+    }
+  },
+  
+  "risk_management": {
+    "stop_loss": {
+      "atr_multiplier": 2.0,
+      "description": "Stop loss = entry - (ATR × this multiplier)"
+    },
+    "take_profit": {
+      "risk_reward_ratio": 1.5,
+      "partial_exit_pct": 0.5,
+      "description": "Take 50% profit at 1.5× risk distance"
+    },
+    "trailing_stop": {
+      "atr_multiplier": 1.5,
+      "description": "Trail remaining position with this × ATR"
+    },
+    "max_position_hours": 12,
+    "daily_loss_multiplier": 3.0,
+    "max_drawdown_pct": 0.20,
+    "volatility_pause_threshold": 0.10,
+    "sharp_drop_alert_threshold": 0.05
+  },
+  
+  "paper_trading": {
+    "enabled": true,
+    "starting_balance_usd": 10000.0,
+    "starting_balance_btc": 0.0,
+    "note": "Set enabled=false to switch to live trading (HIGH RISK)"
+  },
+  
+  "fees": {
+    "taker_fee": 0.006,
+    "slippage": 0.001,
+    "description": "Coinbase fees ~0.6%, avg slippage ~0.1%"
+  },
+  
+  "monitoring": {
+    "check_interval_seconds": 60,
+    "log_level": "INFO",
+    "description": "How often to check market (seconds), log verbosity (DEBUG/INFO/WARNING/ERROR)"
+  }
+}
