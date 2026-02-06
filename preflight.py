@@ -40,27 +40,25 @@ def check_dependencies():
 
 def check_api_credentials():
     """Check API credentials are set"""
-    key = os.getenv('COINBASE_API_KEY')
-    secret = os.getenv('COINBASE_API_SECRET')
-    passphrase = os.getenv('COINBASE_API_PASSPHRASE')
+    key_name = os.getenv('COINBASE_API_KEY_NAME')
+    private_key = os.getenv('COINBASE_PRIVATE_KEY')
     
-    if not key:
-        print("❌ COINBASE_API_KEY not set")
-        print("   Set with: export COINBASE_API_KEY='your_key'")
+    if not key_name:
+        print("❌ COINBASE_API_KEY_NAME not set")
+        print("   Set with: export COINBASE_API_KEY_NAME='your_key_name'")
         return False
     
-    if not secret:
-        print("❌ COINBASE_API_SECRET not set")
-        print("   Set with: export COINBASE_API_SECRET='your_secret'")
+    if not private_key:
+        print("❌ COINBASE_PRIVATE_KEY not set")
+        print("   Set with: export COINBASE_PRIVATE_KEY='your_private_key'")
         return False
     
-    if not passphrase:
-        print("⚠️  COINBASE_API_PASSPHRASE not set (may be required)")
-        print("   Set with: export COINBASE_API_PASSPHRASE='your_passphrase'")
-        # Don't fail - some API versions don't need this
+    if not private_key.startswith('-----BEGIN'):
+        print("⚠️  WARNING: Private key should be in PEM format")
+        print("   It should start with: -----BEGIN EC PRIVATE KEY-----")
     
     print("✓ API credentials found")
-    print(f"   Key: {key[:8]}...{key[-4:]}")
+    print(f"   Key Name: {key_name}")
     return True
 
 def check_config():
