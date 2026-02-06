@@ -53,6 +53,9 @@ def load_env_file(env_path='.env'):
                     elif value.startswith("'") and value.endswith("'"):
                         value = value[1:-1]
                     
+                    # Convert escape sequences to actual characters (especially \n for private keys)
+                    value = value.replace('\\n', '\n').replace('\\t', '\t')
+                    
                     # Check if this starts a multi-line value (private key)
                     if value.startswith('-----BEGIN'):
                         current_key = key
