@@ -184,6 +184,12 @@ class CoinbaseClient:
     
     def __init__(self, api_key_name: str, private_key: str):
         self.api_key_name = api_key_name
+        # Extract UUID from API key name if it's a full path
+        # Format: organizations/.../apiKeys/UUID or just UUID
+        if '/apiKeys/' in api_key_name:
+            self.api_key_uuid = api_key_name.split('/apiKeys/')[-1]
+        else:
+            self.api_key_uuid = api_key_name
         self.private_key = private_key
         self.base_url = "https://api.coinbase.com"
         
@@ -219,8 +225,9 @@ class CoinbaseClient:
         now = int(time.time())
         
         # Create JWT payload according to Coinbase Advanced Trade API spec
+        # Use the UUID part of the API key name as the subject
         payload = {
-            'sub': self.api_key_name,
+            'sub': self.api_key_uuid,
             'iss': 'coinbase-cloud',
             'nbf': now,
             'exp': now + 120,  # 2 minute expiration
