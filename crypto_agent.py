@@ -9,7 +9,7 @@ import json
 import time
 import logging
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Dict, List, Optional, Tuple
 import requests
 import jwt
@@ -621,13 +621,13 @@ class TradingStrategy:
         self.position = Position(
             entry_price=price,
             size=size_btc,
-            entry_time=datetime.utcnow(),
+            entry_time=datetime.now(UTC),
             stop_loss=stop_loss,
             take_profit=take_profit
         )
         
         trade_log = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(UTC).isoformat(),
             'action': 'BUY',
             'price': price,
             'size': size_btc,
@@ -675,7 +675,7 @@ class TradingStrategy:
             self.peak_balance = current_total
         
         trade_log = {
-            'timestamp': datetime.utcnow().isoformat(),
+            'timestamp': datetime.now(UTC).isoformat(),
             'action': 'SELL',
             'price': current_price,
             'size': size_btc,
@@ -683,7 +683,7 @@ class TradingStrategy:
             'fee': fee,
             'pnl': pnl,
             'pnl_pct': pnl_pct,
-            'hold_time': (datetime.utcnow() - self.position.entry_time).total_seconds() / 3600,
+            'hold_time': (datetime.now(UTC) - self.position.entry_time).total_seconds() / 3600,
             'reason': reason,
             'balance_usd': self.balance_usd,
             'balance_btc': self.balance_btc
@@ -701,7 +701,7 @@ class TradingStrategy:
             return
         
         # Check max hold time
-        hold_hours = (datetime.utcnow() - self.position.entry_time).total_seconds() / 3600
+        hold_hours = (datetime.now(UTC) - self.position.entry_time).total_seconds() / 3600
         if hold_hours >= self.config.max_position_hours:
             self._close_position(f"Max hold time reached ({hold_hours:.1f} hours)")
             return
@@ -767,7 +767,7 @@ class TradingStrategy:
         """Execute one trading cycle"""
         try:
             # Reset daily tracking at midnight UTC
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
             if self.last_check_time and self.last_check_time.date() != now.date():
                 self.logger.info(f"New trading day | Yesterday P&L: ${self.daily_pnl:.2f} | Trades: {len(self.trades_today)}")
                 self.trades_today = []
