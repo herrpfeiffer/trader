@@ -225,9 +225,10 @@ class CoinbaseClient:
         now = int(time.time())
         
         # Create JWT payload according to Coinbase Advanced Trade API spec
-        # Use the UUID part of the API key name as the subject
+        # Try full API key name first (for Coinbase Cloud), fallback to UUID
+        # Coinbase Cloud supports both formats: full path or just UUID
         payload = {
-            'sub': self.api_key_uuid,
+            'sub': self.api_key_name,  # Use full path for Coinbase Cloud API keys
             'iss': 'coinbase-cloud',
             'nbf': now,
             'exp': now + 120,  # 2 minute expiration
