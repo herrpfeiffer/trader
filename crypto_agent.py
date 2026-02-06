@@ -809,7 +809,15 @@ class TradingStrategy:
                 if signal:
                     self._execute_buy(indicators_15m['price'], indicators_15m, reason)
                 else:
-                    self.logger.debug(f"No entry signal: {reason}")
+                    # Log indicator values for debugging
+                    self.logger.info(
+                        f"Entry check | 15m ADX: {indicators_15m['adx']:.1f} | "
+                        f"1h ADX: {indicators_1h['adx']:.1f} | "
+                        f"Price: ${indicators_15m['price']:.2f} | "
+                        f"BB Lower: ${indicators_15m['bb_lower']:.2f} | "
+                        f"Volume spike: {indicators_15m['volume_spike']} | "
+                        f"Reason: {reason}"
+                    )
             
             # Log status
             current_total = self.balance_usd + (self.balance_btc * indicators_15m['price'])
