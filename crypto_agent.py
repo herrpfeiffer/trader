@@ -11,9 +11,9 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 import requests
-import hmac
-import hashlib
-import base64
+import jwt
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
 from dataclasses import dataclass, asdict
 import pandas as pd
 import numpy as np
@@ -89,10 +89,9 @@ load_env_file()
 @dataclass
 class Config:
     """Trading configuration"""
-    # API Settings
-    api_key: str = os.getenv('COINBASE_API_KEY', '')
-    api_secret: str = os.getenv('COINBASE_API_SECRET', '')
-    api_passphrase: str = os.getenv('COINBASE_API_PASSPHRASE', '')
+    # API Settings (New Coinbase Advanced Trade API format)
+    api_key_name: str = os.getenv('COINBASE_API_KEY_NAME', '')
+    private_key: str = os.getenv('COINBASE_PRIVATE_KEY', '')
     
     # Trading Parameters
     asset_pair: str = "BTC-USD"
@@ -162,31 +161,79 @@ def setup_logging(level: str = "INFO"):
 # ==============================================================================
 
 class CoinbaseClient:
-    """Coinbase Advanced Trade API client"""
+    """Coinbase Advanced Trade API client using JWT authentication"""
     
-    def __init__(self, api_key: str, api_secret: str, api_passphrase: str):
-        self.api_key = api_key
-        self.api_secret = api_secret
-        self.api_passphrase = api_passphrase
-        self.base_url = "https://api.exchange.coinbase.com"
+    def __init__(self, api_key_name: str, private_key: str):
+        self.api_key_name = api_key_name
+        self.private_key = private_key
+        self.base_url = "https://api.coinbase.com"
+        
+        # Load private key (handle newlines in environment variable)
+        try:
+            # Clean up the private key string (remove extra whitespace/newlines)
+            private_key_clean = private_key.strip()
+            if '\n' not in private_key_clean and 'BEGIN' in private_key_clean:
+                # If newlines are escaped, replace them
+                private_key_clean = private_key_clean.replace('\\n', '\n')
+            
+            if private_key_clean.startswith('-----BEGIN'):
+                # PEM format - load the private key
+                self.private_key_obj = serialization.load_pem_private_key(
+                    private_key_clean.encode(),
+                    password=None,
+                    backend=default_backend()
+                )
+            else:
+                raise ValueError("Private key must be in PEM format starting with -----BEGIN")
+        except Exception as e:
+            logging.error(f"Failed to load private key: {e}")
+            logging.error("Make sure COINBASE_PRIVATE_KEY contains the full PEM key including BEGIN/END lines")
+            self.private_key_obj = None
     
-    def _generate_signature(self, timestamp: str, method: str, path: str, body: str = '') -> str:
-        """Generate CB-ACCESS-SIGN"""
-        message = timestamp + method + path + body
-        hmac_key = base64.b64decode(self.api_secret)
-        signature = hmac.new(hmac_key, message.encode(), hashlib.sha256)
-        return base64.b64encode(signature.digest()).decode()
+    def _generate_jwt(self, method: str, path: str, body: str = '') -> str:
+        """Generate JWT token for Coinbase Advanced Trade API"""
+        if not self.private_key_obj:
+            raise ValueError("Private key not loaded")
+        
+        # Format URI for JWT (method + host + path)
+        uri = f"{method} api.coinbase.com{path}"
+        now = int(time.time())
+        
+        # Create JWT payload according to Coinbase Advanced Trade API spec
+        payload = {
+            'sub': self.api_key_name,
+            'iss': 'coinbase-cloud',
+            'nbf': now,
+            'exp': now + 120,  # 2 minute expiration
+            'aud': ['retail_rest_api_proxy'],
+            'uri': uri
+        }
+        
+        # Sign JWT with ES256 algorithm
+        try:
+            token = jwt.encode(
+                payload,
+                self.private_key_obj,
+                algorithm='ES256'
+            )
+            return token
+        except Exception as e:
+            logging.error(f"JWT encoding failed: {e}")
+            raise
     
     def _request(self, method: str, path: str, params: dict = None, body: dict = None) -> dict:
-        """Make authenticated API request"""
-        timestamp = str(time.time())
+        """Make authenticated API request using JWT"""
         body_str = json.dumps(body) if body else ''
         
+        # Generate JWT token
+        try:
+            jwt_token = self._generate_jwt(method, path, body_str)
+        except Exception as e:
+            logging.error(f"Failed to generate JWT: {e}")
+            return {}
+        
         headers = {
-            'CB-ACCESS-KEY': self.api_key,
-            'CB-ACCESS-SIGN': self._generate_signature(timestamp, method, path, body_str),
-            'CB-ACCESS-TIMESTAMP': timestamp,
-            'CB-ACCESS-PASSPHRASE': self.api_passphrase,
+            'Authorization': f'Bearer {jwt_token}',
             'Content-Type': 'application/json'
         }
         
@@ -211,7 +258,7 @@ class CoinbaseClient:
         Granularity: 60=1m, 300=5m, 900=15m, 3600=1h, 21600=6h, 86400=1d
         Returns: [[timestamp, low, high, open, close, volume], ...]
         """
-        path = f"/products/{product_id}/candles"
+        path = f"/api/v3/brokerage/products/{product_id}/candles"
         params = {'granularity': granularity}
         if start:
             params['start'] = start
@@ -219,11 +266,17 @@ class CoinbaseClient:
             params['end'] = end
         
         data = self._request('GET', path, params=params)
+        # Handle new API response format
+        if isinstance(data, dict):
+            if 'candles' in data:
+                return data['candles']
+            elif 'result' in data and isinstance(data['result'], dict):
+                return data['result'].get('candles', [])
         return data if isinstance(data, list) else []
     
     def get_ticker(self, product_id: str) -> dict:
         """Get current ticker"""
-        path = f"/products/{product_id}/ticker"
+        path = f"/api/v3/brokerage/products/{product_id}/ticker"
         return self._request('GET', path)
     
     def place_order(self, product_id: str, side: str, size: float, order_type: str = 'market') -> dict:
@@ -726,12 +779,12 @@ def main():
     logger = setup_logging(config.log_level)
     
     # Validate API credentials
-    if not config.api_key or not config.api_secret:
-        logger.error("Missing API credentials. Set COINBASE_API_KEY and COINBASE_API_SECRET environment variables.")
+    if not config.api_key_name or not config.private_key:
+        logger.error("Missing API credentials. Set COINBASE_API_KEY_NAME and COINBASE_PRIVATE_KEY environment variables.")
         return
     
     # Initialize
-    client = CoinbaseClient(config.api_key, config.api_secret, config.api_passphrase)
+    client = CoinbaseClient(config.api_key_name, config.private_key)
     strategy = TradingStrategy(config, client)
     
     logger.info("=" * 60)
