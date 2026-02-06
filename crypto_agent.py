@@ -8,6 +8,7 @@ import os
 import json
 import time
 import logging
+import secrets
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 import requests
@@ -224,24 +225,30 @@ class CoinbaseClient:
         uri = f"{method} api.coinbase.com{path}"
         now = int(time.time())
         
-        # Create JWT payload according to Coinbase Advanced Trade API spec
-        # Try full API key name first (for Coinbase Cloud), fallback to UUID
-        # Coinbase Cloud supports both formats: full path or just UUID
+        # Create JWT payload according to Coinbase App API spec
+        # See: https://docs.cdp.coinbase.com/coinbase-app/authentication-authorization/api-key-authentication
         payload = {
-            'sub': self.api_key_name,  # Use full path for Coinbase Cloud API keys
-            'iss': 'coinbase-cloud',
+            'sub': self.api_key_name,  # Full API key name: organizations/{org_id}/apiKeys/{key_id}
+            'iss': 'cdp',  # Issuer must be 'cdp' for Coinbase App API
             'nbf': now,
             'exp': now + 120,  # 2 minute expiration
-            'aud': ['retail_rest_api_proxy'],
             'uri': uri
         }
         
+        # Generate random nonce for security (16 bytes = 32 hex characters)
+        nonce = secrets.token_hex(16)
+        
         # Sign JWT with ES256 algorithm
+        # Include kid (key ID) and nonce in headers as per Coinbase App API spec
         try:
             token = jwt.encode(
                 payload,
                 self.private_key_obj,
-                algorithm='ES256'
+                algorithm='ES256',
+                headers={
+                    'kid': self.api_key_name,  # Key ID header
+                    'nonce': nonce  # Random nonce for security
+                }
             )
             return token
         except Exception as e:
