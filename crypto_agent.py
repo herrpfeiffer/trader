@@ -18,6 +18,70 @@ from dataclasses import dataclass, asdict
 import pandas as pd
 import numpy as np
 
+# Load .env file if it exists
+def load_env_file(env_path='.env'):
+    """Load environment variables from .env file"""
+    if not os.path.exists(env_path):
+        return
+    
+    try:
+        with open(env_path, 'r') as f:
+            lines = f.readlines()
+            current_key = None
+            current_value = []
+            
+            for line in lines:
+                line = line.rstrip()
+                # Skip comments and empty lines
+                if not line or line.strip().startswith('#'):
+                    continue
+                
+                # Check if this is a new KEY=VALUE line
+                if '=' in line and not line.strip().startswith('-----'):
+                    # Save previous multi-line value if any
+                    if current_key and current_value:
+                        os.environ[current_key] = '\n'.join(current_value)
+                    
+                    # Parse new KEY=VALUE
+                    key, value = line.split('=', 1)
+                    key = key.strip()
+                    value = value.strip()
+                    
+                    # Remove quotes if present
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    elif value.startswith("'") and value.endswith("'"):
+                        value = value[1:-1]
+                    
+                    # Check if this starts a multi-line value (private key)
+                    if value.startswith('-----BEGIN'):
+                        current_key = key
+                        current_value = [value]
+                    else:
+                        # Single line value
+                        if key and not os.getenv(key):
+                            os.environ[key] = value
+                        current_key = None
+                        current_value = []
+                elif current_key:
+                    # Continuation of multi-line value
+                    current_value.append(line)
+                    if '-----END' in line:
+                        # End of multi-line value
+                        if current_key and current_value:
+                            os.environ[current_key] = '\n'.join(current_value)
+                        current_key = None
+                        current_value = []
+            
+            # Save last value if any
+            if current_key and current_value:
+                os.environ[current_key] = '\n'.join(current_value)
+    except Exception as e:
+        logging.warning(f"Could not load .env file: {e}")
+
+# Load .env file at startup
+load_env_file()
+
 # ==============================================================================
 # CONFIGURATION
 # ==============================================================================
