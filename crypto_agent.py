@@ -572,10 +572,22 @@ class TradingStrategy:
     def _get_current_price(self) -> float:
         """Get current BTC price"""
         ticker = self.client.get_ticker(self.config.asset_pair)
-        return float(ticker.get('price', 0))
+        # Ticker endpoint returns list of trades - get price from most recent trade
+        if isinstance(ticker, dict) and 'trades' in ticker:
+            trades = ticker.get('trades', [])
+            if trades and len(trades) > 0:
+                # Most recent trade is first in list
+                return float(trades[0].get('price', 0))
+        # Fallback: try direct price field (for other response formats)
+        if isinstance(ticker, dict):
+            return float(ticker.get('price', 0))
+        return 0.0
     
     def _calculate_position_size(self, current_price: float) -> float:
         """Calculate position size based on tiered rules"""
+        if current_price <= 0:
+            self.logger.warning("Invalid price for position size calculation")
+            return 0.0
         if self.balance_usd <= self.config.size_tier_1_max:
             return self.balance_usd * self.config.size_tier_1_pct / current_price
         elif self.balance_usd <= self.config.size_tier_2_max:
