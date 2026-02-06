@@ -26,59 +26,75 @@ def load_env_file(env_path='.env'):
     
     try:
         with open(env_path, 'r') as f:
-            lines = f.readlines()
-            current_key = None
-            current_value = []
+            content = f.read()
+        
+        # Split by lines but preserve structure
+        lines = content.split('\n')
+        current_key = None
+        current_value = []
+        in_quoted_value = False
+        
+        for line in lines:
+            original_line = line
+            line = line.rstrip()
             
-            for line in lines:
-                line = line.rstrip()
-                # Skip comments and empty lines
-                if not line or line.strip().startswith('#'):
-                    continue
+            # Skip comments and empty lines (unless we're in a multi-line value)
+            if not current_key and (not line or line.strip().startswith('#')):
+                continue
+            
+            # Check if this is a new KEY=VALUE line
+            if '=' in line and not line.strip().startswith('-----') and not current_key:
+                # Parse new KEY=VALUE
+                key, value = line.split('=', 1)
+                key = key.strip()
+                value = value.strip()
                 
-                # Check if this is a new KEY=VALUE line
-                if '=' in line and not line.strip().startswith('-----'):
-                    # Save previous multi-line value if any
-                    if current_key and current_value:
-                        os.environ[current_key] = '\n'.join(current_value)
+                # Check if value starts with a quote (multi-line value)
+                if value.startswith('"') or value.startswith("'"):
+                    quote_char = value[0]
+                    in_quoted_value = True
+                    # Remove opening quote
+                    value = value[1:]
+                    current_key = key
+                    current_value = [value] if value else []
                     
-                    # Parse new KEY=VALUE
-                    key, value = line.split('=', 1)
-                    key = key.strip()
-                    value = value.strip()
-                    
-                    # Remove quotes if present
-                    if value.startswith('"') and value.endswith('"'):
-                        value = value[1:-1]
-                    elif value.startswith("'") and value.endswith("'"):
-                        value = value[1:-1]
-                    
-                    # Convert escape sequences to actual characters (especially \n for private keys)
-                    value = value.replace('\\n', '\n').replace('\\t', '\t')
-                    
-                    # Check if this starts a multi-line value (private key)
-                    if value.startswith('-----BEGIN'):
-                        current_key = key
-                        current_value = [value]
-                    else:
-                        # Single line value
-                        if key and not os.getenv(key):
-                            os.environ[key] = value
+                    # Check if it also ends with a quote (single line)
+                    if value.endswith(quote_char) and len(value) > 1:
+                        # Single line quoted value
+                        value = value[:-1]  # Remove closing quote
+                        os.environ[key] = value.replace('\\n', '\n').replace('\\t', '\t')
                         current_key = None
                         current_value = []
-                elif current_key:
-                    # Continuation of multi-line value
+                        in_quoted_value = False
+                else:
+                    # Single line unquoted value
+                    if key and not os.getenv(key):
+                        os.environ[key] = value
+            elif current_key:
+                # Continuation of multi-line value
+                stripped = line.strip()
+                
+                # Check for closing quote
+                if in_quoted_value and (stripped.endswith('"') or stripped.endswith("'")):
+                    # Remove closing quote
+                    if stripped.endswith('"'):
+                        stripped = stripped[:-1]
+                    elif stripped.endswith("'"):
+                        stripped = stripped[:-1]
+                    if stripped:
+                        current_value.append(stripped)
+                    # Save the value
+                    full_value = '\n'.join(current_value)
+                    # Convert escape sequences
+                    full_value = full_value.replace('\\n', '\n').replace('\\t', '\t')
+                    os.environ[current_key] = full_value
+                    current_key = None
+                    current_value = []
+                    in_quoted_value = False
+                else:
+                    # Add line to current value (preserve structure for private keys)
                     current_value.append(line)
-                    if '-----END' in line:
-                        # End of multi-line value
-                        if current_key and current_value:
-                            os.environ[current_key] = '\n'.join(current_value)
-                        current_key = None
-                        current_value = []
             
-            # Save last value if any
-            if current_key and current_value:
-                os.environ[current_key] = '\n'.join(current_value)
     except Exception as e:
         logging.warning(f"Could not load .env file: {e}")
 
