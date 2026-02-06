@@ -305,15 +305,37 @@ class CoinbaseClient:
     def get_candles(self, product_id: str, granularity: int, start: str = None, end: str = None) -> List[List]:
         """Get historical candles
         Granularity: 60=1m, 300=5m, 900=15m, 3600=1h, 21600=6h, 86400=1d
+        Start/end: Can be ISO string or Unix timestamp (will be converted to Unix timestamp)
         Returns: [[timestamp, low, high, open, close, volume], ...]
         """
         path = f"/api/v3/brokerage/products/{product_id}/candles"
         granularity_enum = self._granularity_to_enum(granularity)
         params = {'granularity': granularity_enum}
+        
+        # Convert ISO strings to Unix timestamps if needed
         if start:
-            params['start'] = start
+            if isinstance(start, str) and 'T' in start:
+                # ISO format - convert to Unix timestamp
+                from datetime import datetime
+                try:
+                    dt = datetime.fromisoformat(start.replace('Z', '+00:00'))
+                    params['start'] = str(int(dt.timestamp()))
+                except:
+                    params['start'] = start
+            else:
+                params['start'] = str(start) if not isinstance(start, str) else start
+        
         if end:
-            params['end'] = end
+            if isinstance(end, str) and 'T' in end:
+                # ISO format - convert to Unix timestamp
+                from datetime import datetime
+                try:
+                    dt = datetime.fromisoformat(end.replace('Z', '+00:00'))
+                    params['end'] = str(int(dt.timestamp()))
+                except:
+                    params['end'] = end
+            else:
+                params['end'] = str(end) if not isinstance(end, str) else end
         
         data = self._request('GET', path, params=params)
         # Handle new API response format
@@ -432,11 +454,16 @@ class TradingStrategy:
         
     def get_candles_df(self, granularity: int, periods: int = 100) -> pd.DataFrame:
         """Fetch and format candle data"""
+        # Use Unix timestamps for Coinbase API
+        now = int(time.time())
+        start_ts = now - (granularity * periods)
+        end_ts = now
+        
         candles = self.client.get_candles(
             self.config.asset_pair,
             granularity,
-            start=(datetime.utcnow() - timedelta(seconds=granularity * periods)).isoformat(),
-            end=datetime.utcnow().isoformat()
+            start=str(start_ts),
+            end=str(end_ts)
         )
         
         if not candles:
