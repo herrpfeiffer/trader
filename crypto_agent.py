@@ -287,13 +287,29 @@ class CoinbaseClient:
             logging.error(f"API request failed: {e}")
             return {}
     
+    def _granularity_to_enum(self, seconds: int) -> str:
+        """Convert seconds to Coinbase granularity enum string"""
+        mapping = {
+            60: 'ONE_MINUTE',
+            300: 'FIVE_MINUTE',
+            900: 'FIFTEEN_MINUTE',
+            1800: 'THIRTY_MINUTE',
+            3600: 'ONE_HOUR',
+            7200: 'TWO_HOUR',
+            14400: 'FOUR_HOUR',
+            21600: 'SIX_HOUR',
+            86400: 'ONE_DAY'
+        }
+        return mapping.get(seconds, 'FIFTEEN_MINUTE')  # Default to 15min
+    
     def get_candles(self, product_id: str, granularity: int, start: str = None, end: str = None) -> List[List]:
         """Get historical candles
         Granularity: 60=1m, 300=5m, 900=15m, 3600=1h, 21600=6h, 86400=1d
         Returns: [[timestamp, low, high, open, close, volume], ...]
         """
         path = f"/api/v3/brokerage/products/{product_id}/candles"
-        params = {'granularity': granularity}
+        granularity_enum = self._granularity_to_enum(granularity)
+        params = {'granularity': granularity_enum}
         if start:
             params['start'] = start
         if end:
