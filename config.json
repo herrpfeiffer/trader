@@ -1,5 +1,6 @@
 {
   "description": "Trading Agent Configuration - Edit these values to tune strategy",
+  "update_note": "Feb 2026: Further relaxed entry conditions - ADX 12.5→8.0, BB margin +2%, Volume 1.5→1.1x, RSI 80→85",
   
   "api": {
     "note": "Set these as environment variables, not in this file",
@@ -35,26 +36,27 @@
   "technical_indicators": {
     "adx": {
       "period": 14,
-      "threshold": 12.5,
-      "description": "Trending market threshold - only trade when ADX > this (relaxed from 25.0)"
+      "threshold": 8.0,
+      "description": "Trending market threshold - only trade when ADX > this (further relaxed from 12.5)"
     },
     "bollinger_bands": {
       "period": 20,
       "std_dev": 2.0,
-      "description": "Entry when price touches lower band"
+      "entry_margin_pct": 0.02,
+      "description": "Entry when price within 2% of lower band (relaxed from exact touch)"
     },
     "rsi": {
       "period": 14,
-      "overbought": 80.0,
-      "description": "Don't buy if RSI > this threshold (relaxed from 70.0)"
+      "overbought": 85.0,
+      "description": "Don't buy if RSI > this threshold (further relaxed from 80.0)"
     },
     "atr": {
       "period": 14,
       "description": "For dynamic stop-loss and trailing calculations"
     },
     "volume": {
-      "spike_multiplier": 1.5,
-      "description": "Entry requires volume > this × average"
+      "spike_multiplier": 1.1,
+      "description": "Entry requires volume > this × average (relaxed from 1.5)"
     }
   },
   
