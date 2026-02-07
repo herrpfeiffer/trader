@@ -1,0 +1,84 @@
+[
+  {
+    "source": "reddit",
+    "symbol": "ETH",
+    "signal_type": "positive_sentiment",
+    "strength": 0.8,
+    "confidence": 0.9,
+    "timestamp": "2026-02-07T09:03:10.963950",
+    "details": {
+      "mentions": 15,
+      "avg_sentiment": 0.6,
+      "subreddits": [
+        "cryptocurrency",
+        "ethereum"
+      ]
+    }
+  },
+  {
+    "source": "reddit",
+    "symbol": "SOL",
+    "signal_type": "positive_sentiment",
+    "strength": 0.7,
+    "confidence": 0.8,
+    "timestamp": "2026-02-07T09:03:10.963959",
+    "details": {
+      "mentions": 8,
+      "avg_sentiment": 0.4,
+      "subreddits": [
+        "CryptoMoonShots"
+      ]
+    }
+  },
+  {
+    "source": "reddit",
+    "symbol": "DOGE",
+    "signal_type": "neutral_buzz",
+    "strength": 0.5,
+    "confidence": 0.6,
+    "timestamp": "2026-02-07T09:03:10.963961",
+    "details": {
+      "mentions": 12,
+      "avg_sentiment": 0.1,
+      "subreddits": [
+        "cryptocurrency"
+      ]
+    }
+  },
+  {
+    "source": "market",
+    "symbol": "ETH",
+    "signal_type": "price_breakout",
+    "strength": 0.9,
+    "confidence": 0.95,
+    "timestamp": "2026-02-07T09:03:10.963962",
+    "details": {
+      "price_change_pct": 8.5,
+      "volume_24hr": 150000
+    }
+  },
+  {
+    "source": "market",
+    "symbol": "AVAX",
+    "signal_type": "volume_spike",
+    "strength": 0.75,
+    "confidence": 0.8,
+    "timestamp": "2026-02-07T09:03:10.963964",
+    "details": {
+      "volume_change_pct": 120,
+      "price_change_pct": 3.2
+    }
+  },
+  {
+    "source": "market",
+    "symbol": "SOL",
+    "signal_type": "momentum_continuation",
+    "strength": 0.65,
+    "confidence": 0.7,
+    "timestamp": "2026-02-07T09:03:10.963965",
+    "details": {
+      "price_change_pct": 5.1,
+      "volume_24hr": 80000
+    }
+  }
+]

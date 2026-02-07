@@ -1,0 +1,75 @@
+[
+  {
+    "symbol": "ETH",
+    "composite_score": 0.804375,
+    "signals": [
+      {
+        "source": "reddit",
+        "symbol": "ETH",
+        "signal_type": "positive_sentiment",
+        "strength": 0.8,
+        "confidence": 0.9,
+        "timestamp": "2026-02-07T09:03:10.963950",
+        "details": {
+          "mentions": 15,
+          "avg_sentiment": 0.6,
+          "subreddits": [
+            "cryptocurrency",
+            "ethereum"
+          ]
+        }
+      },
+      {
+        "source": "market",
+        "symbol": "ETH",
+        "signal_type": "price_breakout",
+        "strength": 0.9,
+        "confidence": 0.95,
+        "timestamp": "2026-02-07T09:03:10.963962",
+        "details": {
+          "price_change_pct": 8.5,
+          "volume_24hr": 150000
+        }
+      }
+    ],
+    "recommendation": "STRONG_BUY",
+    "risk_level": "HIGH",
+    "last_updated": "2026-02-07T09:04:14.332482"
+  },
+  {
+    "symbol": "SOL",
+    "composite_score": 0.49437499999999995,
+    "signals": [
+      {
+        "source": "reddit",
+        "symbol": "SOL",
+        "signal_type": "positive_sentiment",
+        "strength": 0.7,
+        "confidence": 0.8,
+        "timestamp": "2026-02-07T09:03:10.963959",
+        "details": {
+          "mentions": 8,
+          "avg_sentiment": 0.4,
+          "subreddits": [
+            "CryptoMoonShots"
+          ]
+        }
+      },
+      {
+        "source": "market",
+        "symbol": "SOL",
+        "signal_type": "momentum_continuation",
+        "strength": 0.65,
+        "confidence": 0.7,
+        "timestamp": "2026-02-07T09:03:10.963965",
+        "details": {
+          "price_change_pct": 5.1,
+          "volume_24hr": 80000
+        }
+      }
+    ],
+    "recommendation": "WATCH",
+    "risk_level": "HIGH",
+    "last_updated": "2026-02-07T09:04:14.332522"
+  }
+]

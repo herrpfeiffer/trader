@@ -1,0 +1,93 @@
+{
+  "security_policy": {
+    "description": "Security configuration for Crypto Intelligence Network",
+    "version": "1.0",
+    "last_updated": "2026-02-07"
+  },
+  
+  "trading_protection": {
+    "paper_trading_only": true,
+    "daily_loss_limit_usd": 100.0,
+    "position_size_limit_pct": 5.0,
+    "daily_trade_limit": 10,
+    "require_manual_approval_for_live_trading": true,
+    "emergency_shutdown_triggers": [
+      "multiple_failed_api_calls",
+      "suspicious_data_patterns", 
+      "rate_limit_violations",
+      "security_exception_count_threshold"
+    ]
+  },
+  
+  "network_security": {
+    "allowed_domains": [
+      "api.exchange.coinbase.com",
+      "www.reddit.com",
+      "api.reddit.com", 
+      "oauth.reddit.com"
+    ],
+    "required_protocols": ["https"],
+    "ssl_verification": true,
+    "certificate_pinning": false,
+    "request_timeout_seconds": 30,
+    "max_retries": 3
+  },
+  
+  "rate_limiting": {
+    "reddit": {
+      "requests_per_minute": 60,
+      "burst_allowance": 10
+    },
+    "coinbase": {
+      "requests_per_minute": 100, 
+      "burst_allowance": 20
+    },
+    "default": {
+      "requests_per_minute": 30,
+      "burst_allowance": 5
+    }
+  },
+  
+  "data_protection": {
+    "log_sensitive_data": false,
+    "encrypt_stored_data": true,
+    "data_retention_days": 7,
+    "anonymize_personal_info": true,
+    "scrub_patterns": [
+      "credit_card_numbers",
+      "social_security_numbers", 
+      "email_addresses",
+      "ip_addresses",
+      "api_keys_in_logs"
+    ]
+  },
+  
+  "input_validation": {
+    "max_string_length": 10000,
+    "blocked_patterns": [
+      "code_injection",
+      "sql_injection",
+      "script_injection",
+      "command_injection"
+    ],
+    "sanitize_html": true,
+    "validate_json_schema": true
+  },
+  
+  "audit_logging": {
+    "enabled": true,
+    "log_file": "security_audit.log",
+    "log_level": "INFO",
+    "log_api_calls": true,
+    "log_data_access": true,
+    "log_security_events": true,
+    "retention_days": 30
+  },
+  
+  "emergency_procedures": {
+    "shutdown_on_security_breach": true,
+    "notification_methods": ["log_file", "console_alert"],
+    "automatic_credential_rotation": false,
+    "backup_systems_activation": false
+  }
+}
