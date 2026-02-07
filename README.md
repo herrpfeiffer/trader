@@ -3,6 +3,19 @@
 
 **⚠️ CURRENT MODE: PAPER TRADING (Simulated, No Real Money)**
 
+## 🆕 Recent Updates
+
+**✅ Configuration System Overhaul (Feb 2026)**
+- **Fixed:** Agent now properly loads settings from `config.json` (was using hardcoded defaults)
+- **Enhanced:** Monitoring interval now configurable (default: 5 seconds, was 60 seconds)
+- **Added:** Cloud deployment automation with systemd service management
+- **Improved:** Real-time log monitoring commands for remote instances
+
+**🐛 Bug Fixes:**
+- Multiple agent instance detection and prevention
+- Proper configuration loading from JSON files
+- Service management improvements for 24/7 operation
+
 ---
 
 ## 📋 Overview
@@ -15,7 +28,7 @@ This is a semi-autonomous trading bot that:
 - Runs in paper trading mode by default (simulated trades with real market data)
 
 **Strategy Summary:**
-- **Entry:** Price touches lower Bollinger Band + volume spike + trending market (ADX > 25) + RSI < 70
+- **Entry:** Price touches lower Bollinger Band + volume spike + trending market (ADX > 12.5) + RSI < 80
 - **Exit:** Hybrid approach - take 50% profit at 1.5× risk, trail remaining position with ATR-based stop
 - **Risk:** ATR-based stop losses, daily loss limits, max drawdown protection, volatility circuit breakers
 
@@ -36,12 +49,21 @@ Create API key at: https://www.coinbase.com/settings/api
 For **paper trading** (current mode), create a **VIEW-ONLY** key (safer).
 
 ```bash
-export COINBASE_API_KEY="your_api_key_here"
-export COINBASE_API_SECRET="your_api_secret_here"
-export COINBASE_API_PASSPHRASE="your_passphrase_here"
+export COINBASE_API_KEY_NAME="your_api_key_name_here"
+export COINBASE_PRIVATE_KEY="-----BEGIN EC PRIVATE KEY-----
+your_private_key_here
+-----END EC PRIVATE KEY-----"
 ```
 
-**Security Note:** Never commit these to git. Add them to your shell profile or use a `.env` file.
+**Or create a `.env` file:**
+```bash
+COINBASE_API_KEY_NAME=your_api_key_name_here
+COINBASE_PRIVATE_KEY="-----BEGIN EC PRIVATE KEY-----
+your_private_key_here
+-----END EC PRIVATE KEY-----"
+```
+
+**Security Note:** Never commit these to git. The agent automatically loads from `.env` file if present.
 
 ### 3. Run the Bot
 
@@ -52,7 +74,7 @@ python crypto_agent.py
 ### 4. Monitor Output
 
 The bot will:
-- Check market every 60 seconds
+- Check market every 5 seconds (configurable in `config.json`)
 - Log all decisions to console and `trading_agent.log`
 - Save all trades to `trades.jsonl`
 - Alert on circuit breaker triggers
@@ -63,9 +85,11 @@ The bot will:
 
 ### Normal Operation
 ```
-2026-02-05 14:23:10 | INFO | Status | USD: $10000.00 | BTC: 0.000000 | Total: $10000.00 | Daily P&L: $0.00 | Position: NONE
-2026-02-05 14:24:15 | DEBUG | No entry signal: 15m ADX too low (22.3 < 25.0)
+2026-02-07 03:50:18 | INFO | Entry check | 15m ADX: 12.1 | 1h ADX: 19.2 | Price: $64352.00 | BB Lower: $63829.95 | Volume spike: False | Reason: 15m ADX too low (12.1 < 12.5)
+2026-02-07 03:50:18 | INFO | Status | USD: $10000.00 | BTC: 0.000000 | Total: $10000.00 | Daily P&L: $0.00 | Position: NONE
+2026-02-07 03:50:24 | INFO | Entry check | 15m ADX: 12.1 | 1h ADX: 19.2 | Price: $64352.00 | BB Lower: $63829.95 | Volume spike: False | Reason: 15m ADX too low (12.1 < 12.5)
 ```
+*Note: Agent checks every 5 seconds (configurable in config.json)*
 
 ### Trade Execution
 ```
@@ -112,6 +136,81 @@ Edit `config.json` to tune parameters without touching code.
 "adx": { "threshold": 25.0 }       // Only trade in trending markets
 "rsi": { "overbought": 70.0 }      // Don't buy if RSI > 70
 "volume": { "spike_multiplier": 1.5 }
+```
+
+**Monitoring & Performance:**
+```json
+"monitoring": {
+  "check_interval_seconds": 5,     // How often to check market (default: 5s)
+  "log_level": "INFO",             // DEBUG/INFO/WARNING/ERROR
+  "description": "How often to check market (seconds), log verbosity"
+}
+```
+
+---
+
+## 🌐 Deployment & Cloud Setup
+
+### Running on Google Cloud Platform (GCP)
+
+For 24/7 operation, deploy on a GCP instance:
+
+1. **Create GCP Instance:**
+   ```bash
+   gcloud compute instances create trading-bot-1 \
+     --zone=us-west1-a \
+     --machine-type=e2-micro \
+     --image-family=ubuntu-2404-lts \
+     --image-project=ubuntu-os-cloud
+   ```
+
+2. **Connect to Instance:**
+   ```bash
+   gcloud compute ssh mail2pufta@trading-bot-1 --zone=us-west1-a
+   ```
+
+3. **Deploy Code:**
+   ```bash
+   # On the GCP instance
+   git clone https://github.com/herrpfeiffer/trader.git
+   cd trader
+   bash INSTALL.sh  # Automated setup script
+   ```
+
+4. **Configure Systemd Service:**
+   The `setup_trader.sh` script automatically creates a systemd service for 24/7 operation:
+   ```bash
+   sudo systemctl status trader    # Check status
+   sudo systemctl restart trader  # Restart service
+   sudo systemctl logs trader -f  # View logs
+   ```
+
+### Real-time Log Monitoring
+
+**From your local machine:**
+```bash
+# Basic real-time logs
+gcloud compute ssh mail2pufta@trading-bot-1 --zone=us-west1-a \
+  --command="cd ~/trading_bot && tail -f trading_agent.log"
+
+# Filtered view (trades & signals only)
+gcloud compute ssh mail2pufta@trading-bot-1 --zone=us-west1-a \
+  --command="cd ~/trading_bot && tail -f trading_agent.log | grep -E 'BUY|SELL|Entry check|Status'"
+
+# Interactive session
+gcloud compute ssh mail2pufta@trading-bot-1 --zone=us-west1-a
+# Then: cd ~/trading_bot && tail -f trading_agent.log
+```
+
+**Service Management:**
+```bash
+# Restart after config changes
+gcloud compute ssh mail2pufta@trading-bot-1 --zone=us-west1-a \
+  --command="cd ~/trading_bot && git pull && sudo systemctl restart trader"
+
+# Check service status
+gcloud compute ssh mail2pufta@trading-bot-1 --zone=us-west1-a \
+  --command="sudo systemctl status trader --no-pager -l"
 ```
 
 ---
@@ -271,6 +370,26 @@ def _alert(self, message: str):
 - Each round-trip costs ~1.2% in fees
 - Strategy needs >1.2% gain per trade to profit
 - Consider weekly swing trading instead of high-frequency
+
+### Config changes not taking effect
+- **Symptom:** Agent still shows old intervals/settings after config.json changes
+- **Cause:** Agent needs restart to reload configuration
+- **Solution:** `sudo systemctl restart trader` (on GCP) or restart the Python process
+- The agent now properly loads settings from `config.json` (fixed in recent update)
+
+### Multiple agent instances running
+- **Symptom:** Inconsistent log timing, multiple entries for same timestamp
+- **Check:** `ps aux | grep crypto_agent` - should show only one process
+- **Solution:** Kill all instances: `pkill -f crypto_agent.py` then restart properly
+- **Prevention:** Always use systemd service (`sudo systemctl start trader`) instead of running manually
+
+### Agent won't start after deployment
+- **Check service status:** `sudo systemctl status trader`
+- **View detailed logs:** `journalctl -u trader -f`
+- **Common issues:**
+  - Missing `.env` file with API credentials
+  - Wrong file permissions: `chmod 600 .env`
+  - Python dependencies: `pip3 install --user pandas numpy requests PyJWT cryptography`
 
 ---
 
