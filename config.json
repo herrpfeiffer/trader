@@ -1,6 +1,6 @@
 {
   "description": "Trading Agent Configuration - Edit these values to tune strategy",
-  "update_note": "Feb 2026: Further relaxed entry conditions - ADX 12.5→8.0, BB margin +2%, Volume 1.5→1.1x, RSI 80→85",
+  "update_note": "Feb 2026: Aggressively relaxed entry conditions - ADX 12.5→8.0, BB margin +2%, Volume 1.5→0.8x, RSI 80→85",
   
   "api": {
     "note": "Set these as environment variables, not in this file",
@@ -55,8 +55,8 @@
       "description": "For dynamic stop-loss and trailing calculations"
     },
     "volume": {
-      "spike_multiplier": 1.1,
-      "description": "Entry requires volume > this × average (relaxed from 1.5)"
+      "spike_multiplier": 0.8,
+      "description": "Entry requires volume >= 80% of average (very relaxed from 1.5)"
     }
   },
   
